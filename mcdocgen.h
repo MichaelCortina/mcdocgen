@@ -8,8 +8,14 @@
 typedef enum token_header {
     TOK_COMMENTSTART,
     TOK_COMMENTCONTENTS,
-    TOK_COMMENTEND
+    TOK_COMMENTEND,
+    TOK_FUNCTIONHEADER
 } TokHeader;
+
+typedef struct token_function_header {
+    TokHeader header;
+    char function_header[1];
+} TokFunctionHeader;
 
 typedef struct token_comment_contents {
     TokHeader header;
@@ -19,7 +25,7 @@ typedef struct token_comment_contents {
 typedef struct token_list {
     int capacity;
     TokHeader **top;
-    TokHeader *elements[1];
+    TokHeader **elements;
 } TokList;
 
 TokList *lex(char *pathname);

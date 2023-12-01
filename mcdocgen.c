@@ -23,7 +23,7 @@ TokList* lex(char *pathname) {
                 toklist_add(toklist, token);
 
             } else if (startswith(trimmed, "* ")) {
-                TokCommentContents *token = malloc(sizeof(TokCommentContents) + strlen(trimmed += 2) + 1);
+                TokCommentContents *token = malloc(sizeof(TokCommentContents) + strlen(trimmed += 2));
                 token->header = TOK_COMMENTCONTENTS;
                 strcpy(token->contents, trimmed);
                 toklist_add(toklist, (TokHeader *) token);
@@ -32,6 +32,14 @@ TokList* lex(char *pathname) {
                 TokHeader *token = malloc(sizeof(*token));
                 *token = TOK_COMMENTEND;
                 toklist_add(toklist, token);
+
+            } else if (buffer[0] == trimmed[0] 
+                    && buffer[0] != '}'
+                    && buffer[0] != '#') { /* case where there was no whitespace */
+                TokFunctionHeader *token = malloc(sizeof(TokFunctionHeader) + strlen(trimmed));
+                token->header = TOK_FUNCTIONHEADER;
+                strcpy(token->function_header, trimmed);
+                toklist_add(toklist, (TokHeader *) token);
             }
 
         }
@@ -48,9 +56,10 @@ TokList* lex(char *pathname) {
 /* --------------------------- TokList --------------------------- */
 
 TokList* toklist_create(int capacity) {
-    TokList *retval = malloc(sizeof(*retval) + sizeof(TokHeader*) * (capacity - 1));
-
+    TokList *retval = malloc(sizeof(*retval));
+    
     retval->capacity = capacity;
+    retval->elements = malloc(sizeof(*retval->elements) * capacity);
     retval->top = retval->elements;
 
     return retval;
@@ -58,7 +67,8 @@ TokList* toklist_create(int capacity) {
 
 void toklist_add(TokList *list, TokHeader *element) {
     if (&list->elements[list->capacity] == list->top) {
-        list = realloc(list, sizeof(TokList) + sizeof(TokHeader*) * (list->capacity * 2 - 1));
+        list->elements = realloc(list->elements, sizeof(TokHeader*) * (list->capacity * 2));
+        list->top = &list->elements[list->capacity];
         list->capacity *= 2;
     }
     *(list->top++) = element;

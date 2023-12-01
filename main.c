@@ -19,6 +19,10 @@ int main(void) {
             case TOK_COMMENTEND:
                 printf(" */\n");
                 break;
+            case TOK_FUNCTIONHEADER:
+                contents = ((TokFunctionHeader *) (*p))->function_header;
+                printf("%s\n", contents);
+                break;
         }
     }
 
