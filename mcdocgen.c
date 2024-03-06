@@ -7,115 +7,135 @@
 #define LINE_MAX 1024
 
 TokList* lex(char *pathname) {
-  TokList *toklist = NULL;
-  FILE *fp = fopen(pathname, "r");
-  short lexing_struct = 0,
-        lexing_enum = 0;
+    TokList *toklist = NULL;
+    FILE *fp = fopen(pathname, "r");
 
-  if (fp != NULL) {
-    char buffer[LINE_MAX];
-    toklist = toklist_create(16);
+    if (fp != NULL) {
+        char buffer[LINE_MAX];
+        toklist = toklist_create(16);
 
-    while (fgets(buffer, LINE_MAX, fp) != NULL) {
-      char *trimmed = trimwhitespace(buffer);
+        while (fgets(buffer, LINE_MAX, fp) != NULL) {
+            TokHeader *token;
+            char *trimmed = trimwhitespace(buffer);
+            bool lexing_comment = FALSE;
 
-      if (startswith(trimmed, "/*")) {
-        TokHeader *token = malloc(sizeof(*token));
-        *token = TOK_COMMENTSTART;
-        toklist_add(toklist, token);
+            while (*trimmed != '\0') {
 
-      } else if (startswith(trimmed, "* ")) {
-        TokCommentContents *token = malloc(sizeof(TokCommentContents) + strlen(trimmed += 2));
-        token->header = TOK_COMMENTCONTENTS;
-        strcpy(token->contents, trimmed);
-        toklist_add(toklist, (TokHeader *) token);
+                if (startswith(trimmed, "*/")) {
+                    TokHeader *token = malloc(sizeof(*token));
+                    *token = TOK_COMMENTEND;
+                    lexing_comment = FALSE; 
+                    trimmed += 2;
+                }
 
-      } else if (startswith(trimmed, "*/")) {
-        TokHeader *token = malloc(sizeof(*token));
-        *token = TOK_COMMENTEND;
-        toklist_add(toklist, token);
+                else if (!lexing_comment) {
 
-      } else if (startswith(trimmed, "typedef struct")) {
-        TokStructDef *token = malloc(sizeof(TokStructDef) + strlen(trimmed));
-        token->header = TOK_STRUCTDEF;
-        strcpy(token->struct_def, trimmed);
-        toklist_add(toklist, (TokHeader *) token);
-        
-        lexing_struct = 1;
+                    if (startswith(trimmed, "/*")) {
+                        token = malloc(sizeof(*token));
+                        *token = TOK_COMMENTSTART;
+                        lexing_comment = TRUE;
+                        trimmed += 2;
+                    }
 
-      } else if (startswith(trimmed, "typedef enum")) {
-        TokEnumDef *token = malloc(sizeof(TokEnumDef) + strlen(trimmed));
-        token->header = TOK_ENUMDEF;
-        strcpy(token->enum_def, trimmed);
-        toklist_add(toklist, (TokHeader *) token);
+                    else if (startswith(trimmed, "typedef struct")) {
+                        TokStructDef *temp = malloc(sizeof(TokStructDef) + strlen(trimmed));
+                        temp->header = TOK_STRUCTDEF;
+                        strcpy(temp->struct_def, trimmed);
+                        token = (TokHeader *) temp;
+                        trimmed += 14; 
+                    } 
 
-        lexing_enum = 1;
+                    else if (startswith(trimmed, "typedef enum")) {
+                        TokEnumDef *temp = malloc(sizeof(TokEnumDef) + strlen(trimmed));
+                        temp->header = TOK_ENUMDEF;
+                        strcpy(temp->enum_def, trimmed);
+                        token = (TokHeader *) temp;
+                        trimmed += 12;
+                    } 
 
-      } else if (startswith(trimmed, "}")) {
-        TokHeader *token = malloc(sizeof(*token));
-        if (lexing_struct) {
-          *token = TOK_STRUCTEND;
-        } else if (lexing_enum) {
-          *token = TOK_ENUMEND;
-        } else {
-          fprintf(stderr, "lexing failed at: }");
-        }
-        toklist_add(toklist, token);
+                    else if (startswith(trimmed, "{")) {
+                        token = malloc(sizeof(*token));
+                        *token = TOK_OPENBRACE; 
+                        trimmed += 1;
+                    }
 
-        lexing_struct = lexing_enum = 0;
+                    else if (startswith(trimmed, "}")) {
+                        token = malloc(sizeof(*token));
+                        *token = TOK_CLOSEBRACE;
+                        trimmed += 1;
+                    } 
 
-      } else if (buffer[0] == trimmed[0] 
-          && buffer[0] != '}'
-          && buffer[0] != '#') { /* case where there was no whitespace */
-        TokFunctionHeader *token = malloc(sizeof(TokFunctionHeader) + strlen(trimmed));
-        token->header = TOK_FUNCTIONHEADER;
-        strcpy(token->function_header, trimmed);
-        toklist_add(toklist, (TokHeader *) token);
-      }
+                    else {
+                        TokChar *temp = malloc(sizeof(*token) + 1);
+                        temp->header = TOK_CHAR;
+                        temp->c = trimmed[0];
+                        token = (TokHeader *) temp;
+                        trimmed += 1;
+                    }
+                } /* end !lexing_comment */
 
+                else {
+                    TokChar *temp = malloc(sizeof(*token) + 1);
+                    temp->header = TOK_CHAR;
+                    temp->c = trimmed[0];
+                    token = (TokHeader *) temp;
+                    trimmed += 1;
+                }
+
+                toklist_add(toklist, token);
+                trimwhitespace(trimmed);
+            } /* end inner while */
+            
+            if (TRUE) { /* for testing purposes */
+                TokChar *temp = malloc(sizeof(*token) + 1);
+                temp->header = TOK_CHAR;
+                temp->c = '\n';
+                token = (TokHeader *) temp;
+                toklist_add(toklist, token);
+            }
+
+        } /* end outer while */
+        fclose(fp);
+    } else {
+        fprintf(stderr, "error opening file: %s", pathname);
+        exit(1);
     }
 
-    fclose(fp);
-  } else {
-    fprintf(stderr, "error opening file: %s", pathname);
-    exit(1);
-  }
-
-  return toklist;
+    return toklist;
 }
 
 /* --------------------------- TokList --------------------------- */
 
 TokList* toklist_create(int capacity) {
-  TokList *retval = malloc(sizeof(*retval));
+    TokList *retval = malloc(sizeof(*retval));
 
-  retval->capacity = capacity;
-  retval->elements = malloc(sizeof(*retval->elements) * capacity);
-  retval->top = retval->elements;
+    retval->capacity = capacity;
+    retval->elements = malloc(sizeof(*retval->elements) * capacity);
+    retval->top = retval->elements;
 
-  return retval;
+    return retval;
 }
 
 void toklist_destroy(TokList **toklist) {
-  TokHeader **p = (*toklist)->elements;
-  
-  while (p != (*toklist)->top) {
-    free(*(p++));
-  }
+    TokHeader **p = (*toklist)->elements;
 
-  free((*toklist)->elements);
-  free(*toklist);
-  toklist = NULL;
+    while (p != (*toklist)->top) {
+        free(*(p++));
+    }
+
+    free((*toklist)->elements);
+    free(*toklist);
+    toklist = NULL;
 }
 
 
 void toklist_add(TokList *list, TokHeader *element) {
-  if (&list->elements[list->capacity] == list->top) {
-    list->elements = realloc(list->elements, sizeof(TokHeader*) * (list->capacity * 2));
-    list->top = &list->elements[list->capacity];
-    list->capacity *= 2;
-  }
-  *(list->top++) = element;
+    if (&list->elements[list->capacity] == list->top) {
+        list->elements = realloc(list->elements, sizeof(TokHeader*) * (list->capacity * 2));
+        list->top = &list->elements[list->capacity];
+        list->capacity *= 2;
+    }
+    *(list->top++) = element;
 }
 
 /* --------------------- String Manipulation ------------------- */
@@ -125,21 +145,21 @@ void toklist_add(TokList *list, TokHeader *element) {
  */
 char *trimwhitespace(char *str)
 {
-  char *end;
+    char *end;
 
-  while(isspace((unsigned char)*str)) str++;
+    while(isspace((unsigned char)*str)) str++;
 
-  if(*str == 0) 
+    if(*str == 0) 
+        return str;
+
+    end = str + strlen(str) - 1;
+    while(end > str && isspace((unsigned char)*end)) end--;
+
+    end[1] = '\0';
+
     return str;
-
-  end = str + strlen(str) - 1;
-  while(end > str && isspace((unsigned char)*end)) end--;
-
-  end[1] = '\0';
-
-  return str;
 }
 
 short startswith(char *target, char *substring) { 
-  return strstr(target, substring) == target;
+    return strstr(target, substring) == target;
 }

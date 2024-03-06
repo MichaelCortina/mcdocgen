@@ -1,6 +1,10 @@
 #ifndef MCDOCGEN_H
 #define MCDOCGEN_H
 
+#define FALSE 0
+#define TRUE 1
+typedef short bool;
+
 /*
  * defines all of the tokens that will
  * be lexed and parsed by mcdocgen
@@ -11,10 +15,18 @@ typedef enum token_header {
   TOK_COMMENTEND,
   TOK_FUNCTIONHEADER, 
   TOK_STRUCTDEF,
-  TOK_STRUCTEND,
   TOK_ENUMDEF,
-  TOK_ENUMEND
+  TOK_OPENBRACE,
+  TOK_CLOSEBRACE,
+  TOK_OPENPAREN,
+  TOK_CLOSEPAREN,
+  TOK_CHAR
 } TokHeader;
+
+typedef struct token_char {
+    TokHeader header;
+    char c;
+} TokChar;
 
 typedef struct token_enum_definition {
   TokHeader header;

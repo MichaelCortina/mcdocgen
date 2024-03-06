@@ -6,6 +6,7 @@ int main(void) {
   TokList *a = lex("./mcdocgen.h");
   TokHeader **p;
   char *contents;
+  char c;
 
   if (a != NULL) { 
     for (p = a->elements; p < a->top; p++) {
@@ -31,6 +32,10 @@ int main(void) {
         case TOK_ENUMDEF:
           contents = ((TokEnumDef *) (*p))->enum_def;
           printf("ENUMDEF: %s\n", contents);
+          break;
+        case TOK_CHAR:
+          c = ((TokChar *) (*p))->c;
+          printf("%c", c);
           break;
       } /* end switch */
     } /* end for */
