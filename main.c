@@ -10,6 +10,7 @@ int main(int argc, char* argv[]) {
   TokList *a = lex(fp);
   TokHeader **p;
   char *contents;
+  char c;
 
   if (a != NULL) { 
     for (p = a->elements; p < a->top; p++) {
@@ -35,6 +36,10 @@ int main(int argc, char* argv[]) {
         case TOK_ENUMDEF:
           contents = ((TokEnumDef *) (*p))->enum_def;
           printf("ENUMDEF: %s\n", contents);
+          break;
+        case TOK_CHAR:
+          c = ((TokChar *) (*p))->c;
+          printf("%c", c);
           break;
       } /* end switch */
     } /* end for */
