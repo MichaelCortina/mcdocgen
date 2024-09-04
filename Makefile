@@ -4,7 +4,7 @@ CFLAGS = -ansi -pedantic-errors -Wall -fstack-protector-all -Werror -Wno-switch 
 all: main
 
 main: main.o mcdocgen.o
-	$(CC) main.o mcdocgen.o -o main
+	$(CC) main.o mcdocgen.o -o mcdocgen
 
 main.o: main.c mcdocgen.h
 	$(CC) $(CFLAGS) main.c -c
@@ -13,4 +13,4 @@ mcdocgen.o: mcdocgen.c mcdocgen.h
 	$(CC) $(CFLAGS) mcdocgen.c -c
 
 clean:
-	rm -f *.o main
+	rm -f *.o main mcdocgen

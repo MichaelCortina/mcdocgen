@@ -1,9 +1,13 @@
 #include "mcdocgen.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
-int main(void) {
-  TokList *a = lex("./mcdocgen.h");
+FILE* get_file_or_exit(int, char**);
+
+int main(int argc, char* argv[]) {
+  FILE* fp = get_file_or_exit(argc, argv);
+  TokList *a = lex(fp);
   TokHeader **p;
   char *contents;
 
@@ -40,3 +44,27 @@ int main(void) {
 
   return 0;
 }
+
+FILE* get_file_or_exit(int argc, char* argv[]) {
+  char* error_message = NULL;
+  FILE* fp = NULL;
+
+  if (argc != 2) {
+    error_message = "Incorrect Number of Arguments! \nCorrect Usage: mcdocgen <filename> \n";
+  }
+
+  else { 
+    fp = fopen(argv[1], "r"); 
+
+    if (fp == NULL) {
+      error_message = "File Not Found! \n"; 
+    }
+  }
+
+  if (error_message != NULL) {
+    fprintf(stderr, error_message, strlen(error_message));
+    exit(2);
+  }
+
+  return fp;
+} /* endfn */

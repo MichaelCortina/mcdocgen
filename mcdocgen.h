@@ -1,6 +1,11 @@
 #ifndef MCDOCGEN_H
 #define MCDOCGEN_H
 
+#include <stdio.h>  
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+
 /*
  * defines all of the tokens that will
  * be lexed and parsed by mcdocgen
@@ -42,12 +47,12 @@ typedef struct token_list {
   TokHeader **elements;
 } TokList;
 
-TokList *lex(char *pathname);
+TokList* lex(FILE* fp);
 
-char *trimwhitespace(char *str);
+char* trimwhitespace(char *str);
 short startswith(char *target, char *substring);
 
-TokList *toklist_create(int capacity);
+TokList* toklist_create(int capacity);
 void     toklist_destroy(TokList **toklist);
 void     toklist_add(TokList *list, TokHeader *token);
 
